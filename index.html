@@ -4,22 +4,269 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 
-  <!-- Open Graph Preview (keep this for link previews) -->
-  <meta property="og:title" content="RouteIQ NYC 🚕🚇">
-  <meta property="og:description" content="Subway vs Taxi — Instantly Smarter.">
-  <meta property="og:image" content="https://routeiq-landing.onrender.com/preview.png">
-  <meta property="og:type" content="website">
+  <meta property="og:title" content="RouteIQ NYC 🚕🚇" />
+  <meta property="og:description" content="Subway vs Taxi — Instantly Smarter. Real-time NYC transit decisions." />
+  <meta property="og:image" content="https://routeiq-landing.onrender.com/preview.png" />
+  <meta property="og:url" content="https://routeiq-landing.onrender.com/" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="RouteIQ NYC 🚕🚇" />
+  <meta name="twitter:description" content="Subway vs Taxi — Instantly Smarter." />
+  <meta name="twitter:image" content="https://routeiq-landing.onrender.com/preview.png" />
 
   <title>RouteIQ NYC</title>
 
-  <!-- INSTANT REDIRECT -->
-  <meta http-equiv="refresh" content="0; url=https://routeiq-nyc.onrender.com/" />
-  <script>
-    window.location.replace("https://routeiq-nyc.onrender.com/");
-  </script>
-</head>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1.25rem;
+      background-color: #E8E4D9;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.18) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.18) 1px, transparent 1px),
+        linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px);
+      background-size: 80px 80px, 80px 80px, 20px 20px, 20px 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Map road lines */
+    .map-road {
+      position: fixed;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .road-h {
+      height: 10px;
+      background: rgba(255,255,255,0.55);
+      border-radius: 5px;
+      left: -5%;
+      width: 110%;
+    }
+    .road-v {
+      width: 10px;
+      background: rgba(255,255,255,0.55);
+      border-radius: 5px;
+      top: -5%;
+      height: 110%;
+    }
+    .road-1 { top: 18%; }
+    .road-2 { top: 52%; }
+    .road-3 { top: 78%; }
+    .road-4 { left: 15%; }
+    .road-5 { left: 62%; }
+
+    .route-line {
+      position: fixed;
+      pointer-events: none;
+      z-index: 2;
+      height: 4px;
+      background: rgba(255,199,44,0.5);
+      border-radius: 2px;
+    }
+    .rl-1 { top: 33%; left: 0; width: 45%; transform: rotate(-8deg); }
+    .rl-2 { top: 63%; left: 38%; width: 65%; transform: rotate(5deg); }
+
+    /* Card */
+    .card {
+      background: rgba(255,255,255,0.88);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border-radius: 28px;
+      padding: 32px 26px 26px;
+      max-width: 360px;
+      width: 100%;
+      box-shadow:
+        0 2px 4px rgba(0,0,0,0.06),
+        0 10px 28px rgba(0,0,0,0.11),
+        0 28px 52px rgba(0,0,0,0.07);
+      position: relative;
+      z-index: 10;
+    }
+
+    .wordmark {
+      font-size: 26px;
+      font-weight: 800;
+      color: #111;
+      letter-spacing: -0.8px;
+      margin-bottom: 4px;
+    }
+    .wordmark span { color: #FFC72C; }
+
+    .tagline {
+      font-size: 14px;
+      color: #999;
+      font-weight: 500;
+      margin-bottom: 22px;
+    }
+
+    /* Compare block */
+    .compare-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #F7F6F2;
+      border-radius: 16px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      border: 1px solid rgba(0,0,0,0.06);
+    }
+
+    .mode-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .mode-badge {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #FFC72C;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 900;
+      color: #111;
+      flex-shrink: 0;
+    }
+    .mode-badge.taxi { font-size: 17px; }
+
+    .eta-big {
+      font-size: 22px;
+      font-weight: 800;
+      color: #111;
+      letter-spacing: -0.5px;
+    }
+    .eta-unit {
+      font-size: 13px;
+      font-weight: 600;
+      color: #AAA;
+    }
+
+    /* Status rows */
+    .status-list {
+      padding: 2px 2px 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #333;
+    }
+    .status-icon {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      flex-shrink: 0;
+    }
+    .icon-green { background: #E8F5E9; color: #2E7D32; font-size:12px; }
+    .icon-amber { background: #FFF8E1; color: #E65100; font-size:12px; }
+
+    .divider {
+      height: 1px;
+      background: rgba(0,0,0,0.07);
+      margin: 14px 0;
+    }
+
+    .sub-text {
+      font-size: 13px;
+      color: #AAA;
+      font-weight: 500;
+      line-height: 1.55;
+    }
+
+    .cta {
+      display: block;
+      width: 100%;
+      background: #FFC72C;
+      color: #111;
+      font-size: 16px;
+      font-weight: 800;
+      padding: 15px;
+      border-radius: 14px;
+      text-decoration: none;
+      text-align: center;
+      letter-spacing: -0.2px;
+      margin-top: 20px;
+      transition: background 0.12s, transform 0.08s;
+    }
+    .cta:hover { background: #e6b800; }
+    .cta:active { transform: scale(0.98); }
+
+    .footnote {
+      text-align: center;
+      font-size: 12px;
+      color: #CCC;
+      margin-top: 10px;
+    }
+  </style>
+</head>
 <body>
-  <!-- Nothing here on purpose -->
+
+  <div class="map-road road-h road-1"></div>
+  <div class="map-road road-h road-2"></div>
+  <div class="map-road road-h road-3"></div>
+  <div class="map-road road-v road-4"></div>
+  <div class="map-road road-v road-5"></div>
+  <div class="route-line rl-1"></div>
+  <div class="route-line rl-2"></div>
+
+  <div class="card">
+
+    <div class="wordmark">RouteIQ <span>NYC</span></div>
+    <div class="tagline">Subway vs Taxi — Instantly smarter.</div>
+
+    <div class="compare-row">
+      <div class="mode-group">
+        <div class="mode-badge">M</div>
+        <div><span class="eta-big">24</span> <span class="eta-unit">min</span></div>
+      </div>
+      <div class="mode-group">
+        <div class="mode-badge taxi">🚕</div>
+        <div><span class="eta-big">18</span> <span class="eta-unit">min</span></div>
+      </div>
+    </div>
+
+    <div class="status-list">
+      <div class="status-row">
+        <div class="status-icon icon-green">✓</div>
+        Taxi is faster right now
+      </div>
+      <div class="status-row">
+        <div class="status-icon icon-amber">!</div>
+        Moderate traffic on route
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="sub-text">
+      Real-time subway delays · Live traffic · AI routing logic · Know exactly when to leave.
+    </div>
+
+    <a href="https://routeiq-nyc.onrender.com/" class="cta">Open RouteIQ →</a>
+    <div class="footnote">Made in NYC 💛</div>
+
+  </div>
+
 </body>
 </html>
